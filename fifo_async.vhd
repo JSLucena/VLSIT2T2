@@ -25,7 +25,7 @@ signal mem_size : integer := 64; -- MUDAR CASO NECESSARIO AUMENTAR MEMORIA
 signal sts_empty_in, sts_full_in : std_logic; -- sinais internos para calcular o sts_error
 
 signal lastOp : std_Logic := '0'; -- indica se a ultima operacao foi escrita ou leitura
-
+signal read_sniffer, write_sniffer : std_logic := '0';
 begin
 
 
@@ -37,6 +37,7 @@ begin
 		
 		elsif rising_edge(wr_clk) then
 			if wr_en = '1' then
+				write_sniffer <= '1';
 				mem(wr_pointer) <= wr_data;
 				
 				
@@ -45,6 +46,8 @@ begin
 				else
 					wr_pointer <= wr_pointer + 1;
 				end if;
+			else
+				write_sniffer <= '0';
 			end if;
 		end if;
 	end process write_process;
@@ -56,6 +59,7 @@ begin
 			rd_data<= x"00";
 		elsif rising_edge(rd_clk) then
 			if rd_en = '1' then
+				read_sniffer <= '1';
 				rd_data <= mem(rd_pointer);
 				
 				if rd_pointer >= 63 then ---MUDAR CASO NECESSARIO AUMENTAR A MEMORIA
@@ -63,6 +67,8 @@ begin
 				else
 					rd_pointer <= rd_pointer + 1;
 				end if;
+			else
+				read_sniffer <= '0';
 			end if;
 		end if;
 	end process read_process;
@@ -80,10 +86,7 @@ begin
 			sts_full_in <= '0';
 			
 			lastOp <= '0';
-		else
-		
-			
-		
+		else					
 			if wr_en ='1' then
 				lastOp <= '1';
 			end if;
@@ -162,7 +165,7 @@ begin
 				
 		end if;
 		
-	end process control_process;		
+	end process control_process;			
 		
 
  end fifo_async;

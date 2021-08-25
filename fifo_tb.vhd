@@ -31,25 +31,25 @@ architecture fifo_tb of fifo_tb is
 	
 begin
 
-	rst <= '0' after 50 ns, '1' after 1000 ns, '0' after 1100 ns;
+	rst <= '0' after 50 ns;--, '1' after 1000 ns, '0' after 1100 ns;
 
 
 
 ---#### WRITE_CLOCK > READ_CLOCK	
-	DUV : entity work.fifo_async port map(
-	wr_clk=>clk_faster, rd_clk=>clk_slower, rst=>rst, wr_en=>wr_en, rd_en=>rd_en,
-	sts_error=>sts_error, sts_full=>sts_full, sts_high=>sts_high, sts_low=>sts_low, sts_empty=>sts_empty,
-	wr_data=>wr_data,
-	rd_data=>rd_data	);
+--	DUV : entity work.fifo_async port map(
+--	wr_clk=>clk_faster, rd_clk=>clk_slower, rst=>rst, wr_en=>wr_en, rd_en=>rd_en,
+--	sts_error=>sts_error, sts_full=>sts_full, sts_high=>sts_high, sts_low=>sts_low, sts_empty=>sts_empty,
+--	wr_data=>wr_data,
+--	rd_data=>rd_data	);
 --##############################
 
 
 --######## WRITE_CLOCK < READ_CLOCK 	
---	DUV : entity work.fifo_async port map(
---	wr_clk=>clk_slower, rd_clk=>clk_faster, rst=>rst, wr_en=>wr_en, rd_en=>rd_en,
---	sts_error=>sts_error, sts_full=>sts_full, sts_high=>sts_high, sts_low=>sts_low, sts_empty=>sts_empty,
---	wr_data=>wr_data,
---	rd_data=>rd_data	); 
+	DUV : entity work.fifo_async port map(
+	wr_clk=>clk_slower, rd_clk=>clk_faster, rst=>rst, wr_en=>wr_en, rd_en=>rd_en,
+	sts_error=>sts_error, sts_full=>sts_full, sts_high=>sts_high, sts_low=>sts_low, sts_empty=>sts_empty,
+	wr_data=>wr_data,
+	rd_data=>rd_data	); 
 --###############################
 	
 	
@@ -57,24 +57,28 @@ begin
 	
 	clock_gen_faster : process -- 50MHz + 25ppm
 	begin
-		clk <= '1';
-		wait for 19999.9 ps;
-		clk <= '0';
-		wait for 19999.9 ps;
-	end process clock_gen;
+		clk_faster <= '1';
+		wait for 19500 ps;
+	--	wait for 19 ns;
+		clk_faster <= '0';
+		wait for 19500 ps;
+	--	wait for 19 ns;
+	end process clock_gen_faster;
 	
 	clock_gen_slower : process -- 50MHz - 25ppm
 	begin
-		clk <= '1';
-		wait for 20000.1 ps;
-		clk <= '0';
-		wait for 20000.1 ps;
-	end
+		clk_slower <= '1';
+		wait for 20500 ps;
+	--	wait for 21 ns;
+		clk_slower <= '0';
+		wait for 20500 ps;
+	--	wait for 21 ns;
+	end process clock_gen_slower;
 	
-	stop_wr <= '1', '0' after 1200 ns;
+	stop_wr <= '1';--, '0' after 1200 ns;
 	--stop_rd <= '0', '1' after 140 ns , '0' after 600 ns; --##teste LOW wr_pointer > rd_pointer
 	--stop_rd <= '0', '1' after 240 ns , '0' after 600 ns; --##teste LOW wr_pointer < rd_pointer
-	stop_rd <= '0', '1' after 440 ns , '0' after 1200 ns; --##teste HIGH
+	stop_rd <= '0','1' after 200 ns; --'1' after 440 ns , '0' after 1200 ns; --##teste HIGH
 	
 	write_process : process
 	begin
@@ -86,7 +90,7 @@ begin
 		else
 			wr_en <= '0';
 			wr_data <= wr_data + '1';
-			wait for 40 ns;
+			wait for 30 ns;
 		end if;
 	
 	end process write_process;
@@ -96,7 +100,7 @@ begin
 		if stop_rd = '1' then
 			rd_en <= not rd_en;
 
-			wait for 20 ns;
+			wait for 40 ns;
 		else
 			rd_en <= '0';
 			wait for 20 ns;
