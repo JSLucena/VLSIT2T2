@@ -22,9 +22,10 @@ signal wr_pointer : integer range 0 to 63 := 0;--MUDAR CASO NECESSARIO AUMENTAR 
 signal rd_pointer : integer range 0 to 63 := 0; --MUDAR CASO NECESSARIO AUMENTAR A MEMORIA
 signal mem_size : integer := 64; -- MUDAR CASO NECESSARIO AUMENTAR MEMORIA
 
-signal sts_empty_in, sts_full_in : std_logic; -- sinais internos para calcular o sts_error
+signal sts_empty_in, sts_full_in , sts_low_in, sts_high_in: std_logic; -- sinais internos para calcular o sts_error
 
-signal lastOp : std_Logic := '0'; -- indica se a ultima operacao foi escrita ou leitura
+--signal lastOp : std_Logic_vector(1 downto 0):= "00"; -- indica se a ultima operacao foi escrita ou leitura
+signal lastOp : std_Logic := '0';
 signal read_sniffer, write_sniffer : std_logic := '0';
 begin
 
@@ -74,6 +75,28 @@ begin
 	end process read_process;
 	
 	
+	
+--	lastOp_process : process(rst,read_sniffer,write_sniffer)
+--	begin
+--		if rst = '1' then
+--			lastOp <= "00";
+--		else
+--			if lastOp /= "00" then
+--				lastOp <= "00";
+--			end if;
+--							
+--			if write_sniffer ='1' then
+--				lastOp <= "10";
+--			end if;
+--			
+--			if read_sniffer = '1' then
+--				lastOp <= lastOp + '1';
+--			end if;
+--		end if;
+--	end process lastOp_process;
+	
+	
+	
 	control_process : process(wr_pointer,rd_pointer,rst)
 	begin
 		if rst = '1' then
@@ -84,37 +107,27 @@ begin
 			sts_empty <= '1';
 			sts_empty_in <= '1';
 			sts_full_in <= '0';
+			sts_low_in <= '1';
+			sts_high_in <= '0';
 			
 			lastOp <= '0';
 		else					
-			if wr_en ='1' then
-				lastOp <= '1';
-			end if;
-			
-			if rd_en = '1' then
+			if sts_low_in ='1' then
 				lastOp <= '0';
+			else
+				if sts_high_in = '1' then
+					lastOp <= '1';
+				end if;
 			end if;
 		
 		
-			-----BLOCO DO ERRO---------
-			if sts_empty_in = '1' then
-				if rd_en = '1' then
-					sts_error <= '1';
-				end if;
-				
-			elsif sts_full_in = '1' then
-				if wr_en = '1' then
-					sts_error <= '1';
-				end if;
-			end if;
-			--------------------------
 		
 			------BLOCO VAZIO/CHEIO------
 			if wr_pointer = rd_pointer then
-				if lastOp = '1' then --ultima operacao foi escrita
+				if sts_high_in = '1' and sts_low_in = '0' then --ultima operacao foi escrita
 					sts_full_in <= '1';
 					sts_full <= '1';
-				else
+				elsif sts_high_in = '0' and sts_low_in = '1' then
 					sts_empty_in <= '1'; -- ultima operacao foi leitura
 					sts_empty <= '1';
 				end if;
@@ -129,39 +142,83 @@ begin
 			
 			-----BLOCO HIGH/LOW----------
 			
-			if wr_pointer >= rd_pointer then
+			if wr_pointer > rd_pointer then
 			
 				if (wr_pointer - rd_pointer) >= mem_size - 4 then
 					sts_high <= '1';
+					sts_high_in <= '1';
 				else
 					sts_high <= '0';
+					sts_high_in <= '0';
+				end if;
+			elsif wr_pointer < rd_pointer then
+				if (wr_pointer + mem_size - rd_pointer) >= mem_size - 4 then
+					sts_high <= '1';
+					sts_high_in <= '1';
+				else
+					sts_high <= '0';
+					sts_high_in <= '0';
 				end if;
 			else
 				if (wr_pointer + mem_size - rd_pointer) >= mem_size - 4 then
-					sts_high <= '1';
+					if lastOp = '1' then
+						sts_high <= '1';
+						sts_high_in <= '1';
+					end if;
 				else
 					sts_high <= '0';
+					sts_high_in <= '0';
 				end if;
-			
+				
 			end if;
 			
 			
 			
-			if wr_pointer >= rd_pointer then
+			if wr_pointer > rd_pointer then
 				if (wr_pointer - rd_pointer) <= 4 then
 					sts_low <= '1';
+					sts_low_in <= '1';
 				else
 					sts_low <= '0';
+					sts_low_in <= '0';
 				end if;	
-			else
+			elsif wr_pointer < rd_pointer then
 				if (wr_pointer + mem_size - rd_pointer) <= 4 then
 					sts_low <= '1';
+					sts_low_in <= '1';
 				else
 					sts_low <= '0';
-				end if;	
+					sts_low_in <= '0';
+				end if;
+			else
+				if (wr_pointer - rd_pointer) <= 4 then
+				
+					if lastOp = '0' then
+						sts_low <= '1';
+						sts_low_in <= '1';
+					end if;
+				else
+					sts_low <= '0';
+					sts_low_in <= '0';
+				end if;
 			end if;
 			 
 			-----------------------------
+			
+			
+			-----BLOCO DO ERRO---------
+			if sts_empty_in = '1' then
+				if wr_pointer < rd_pointer then
+					sts_error <= '1';
+				end if;
+				
+			elsif sts_full_in = '1' then
+				if wr_pointer > rd_pointer then
+					sts_error <= '1';
+				end if;
+			end if;
+			--------------------------
+			
 				
 		end if;
 		

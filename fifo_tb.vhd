@@ -34,13 +34,13 @@ begin
 	rst <= '0' after 50 ns;--, '1' after 1000 ns, '0' after 1100 ns;
 
 
-
 ---#### WRITE_CLOCK > READ_CLOCK	
 --	DUV : entity work.fifo_async port map(
 --	wr_clk=>clk_faster, rd_clk=>clk_slower, rst=>rst, wr_en=>wr_en, rd_en=>rd_en,
 --	sts_error=>sts_error, sts_full=>sts_full, sts_high=>sts_high, sts_low=>sts_low, sts_empty=>sts_empty,
 --	wr_data=>wr_data,
 --	rd_data=>rd_data	);
+	---- erro aos 105880 ns
 --##############################
 
 
